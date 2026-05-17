@@ -221,6 +221,16 @@ input.input-err { border-color: var(--red) !important; }
 /* ════════════════════ SEND / RECEIVE / ACCOUNT ════════════════════ */
 .page-title { font-size: clamp(22px, 4vw, 28px); font-weight: 800; letter-spacing: -.5px; margin-bottom: 4px; }
 .page-sub   { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+#screen-landing .wrap,
+#screen-onboard .wrap,
+#screen-login .wrap,
+#screen-dashboard .wrap,
+#screen-send .wrap,
+#screen-receive .wrap,
+#screen-account .wrap { padding-bottom: 64px; }
+#screen-send .wrap,
+#screen-receive .wrap,
+#screen-account .wrap { gap: 12px; }
 
 /* recipient found card */
 .recipient-found {
@@ -613,6 +623,23 @@ input.input-err { border-color: var(--red) !important; }
     </button>
 
     <div class="divider" style="margin:8px 0"></div>
+    <div class="page-title" style="font-size:19px;margin-bottom:0">Request From Local Account</div>
+    <div class="page-sub">Use for same-device testing and demos.</div>
+    <div class="field">
+      <div class="field-label">Sender Code</div>
+      <input type="text" id="req-from" placeholder="XXXXXXX" maxlength="7"
+        style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:20px;padding:14px"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="field-label">Amount (AD)</div>
+      <input type="number" id="req-amount" placeholder="0" min="1">
+    </div>
+    <div class="msg err" id="req-err"></div>
+    <button class="btn btn-primary btn-full" onclick="doRequest()">Request & Credit</button>
+  </div>
+</div>
 
 
 <!-- ══════════════════════════════════════
