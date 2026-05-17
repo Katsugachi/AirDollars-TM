@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Air Dollars</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Epilogue:wght@400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #f5f4f0;
+  --surface:    #ffffff;
+  --surface2:   #f0eeea;
+  --border:     #e0ddd8;
+  --border-dark:#c8c4be;
+  --text:       #111110;
+  --text-muted: #888580;
+  --text-dim:   #bbb8b2;
+  --accent:     #111110;
+  --r:          18px;
+  --r-sm:       12px;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Epilogue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.screen { display: none; min-height: 100svh; flex-direction: column; }
+.screen.active { display: flex; animation: fadeUp .32s ease both; }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(14px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.logo {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.4px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 22px; border-radius: var(--r);
+  font-family: 'Epilogue', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; border: none; transition: all .16s ease; text-align: center; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2d2d2b; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--border-dark); }
+.btn-ghost:hover { background: var(--surface2); }
+.btn-muted { background: var(--surface2); color: var(--text-muted); border: 1.5px solid var(--border); }
+.btn-muted:hover { background: var(--border); color: var(--text); }
+.btn-sm { padding: 10px 16px; font-size: 13px; border-radius: var(--r-sm); }
+.btn-full { width: 100%; }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+/* ── INPUTS ── */
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field-label {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1.2px;
+}
+input[type="text"], input[type="number"] {
+  background: var(--surface); border: 1.5px solid var(--border-dark);
+  border-radius: var(--r-sm); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 16px;
+  padding: 14px 16px; outline: none; width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none; appearance: none;
+}
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17,17,16,.07); }
+input::placeholder { color: var(--text-dim); }
+
+/* ── CARD ── */
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 20px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.stat-row:last-child { border-bottom: none; }
+.stat-key { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+
+/* ── BACK BTN ── */
+.back-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 14px 0; letter-spacing: .5px; transition: color .12s;
+}
+.back-btn:hover { color: var(--text); }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ════════════════════════ LANDING ════════════════════════ */
+.landing-wrap {
+  max-width: 480px; margin: 0 auto; padding: 0 24px 40px;
+  flex: 1; display: flex; flex-direction: column; justify-content: space-between;
+}
+.topbar { padding: 20px 0; display: flex; align-items: center; justify-content: space-between; }
+.landing-hero { margin-top: 48px; }
+.landing-h1 { font-size: clamp(54px,13vw,90px); font-weight: 900; line-height: .92; letter-spacing: -3px; }
+.landing-h1 em { color: var(--text-dim); font-style: normal; }
+.landing-tagline { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-muted); line-height: 1.65; margin-top: 22px; max-width: 300px; }
+.landing-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 44px; }
+.landing-foot { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); }
+
+/* ════════════════════════ ONBOARDING ════════════════════════ */
+.onboard-inner {
+  width: 100%; max-width: 480px; margin: 0 auto; padding: 0 24px 48px;
+  flex: 1; display: flex; flex-direction: column;
+}
+.progress-track { height: 2px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 4px 0 36px; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+.step { display: none; flex-direction: column; gap: 22px; flex: 1; animation: fadeUp .28s ease both; }
+.step.active { display: flex; }
+.step-eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); letter-spacing: 1.2px; }
+.step-title { font-size: clamp(22px,5vw,28px); font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
+.step-body { font-size: 14px; color: var(--text-muted); line-height: 1.65; margin-top: -6px; }
+
+.code-box {
+  background: var(--surface2); border: 1.5px solid var(--border-dark); border-radius: var(--r);
+  padding: 28px 24px; text-align: center; cursor: pointer; transition: background .15s;
+}
+.code-box:hover { background: var(--border); }
+.code-box-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+.code-chars { font-family: 'DM Mono', monospace; font-size: clamp(28px,8vw,40px); letter-spacing: 8px; font-weight: 500; line-height: 1; transition: filter .3s; user-select: none; }
+.code-chars.blurred { filter: blur(10px); }
+.code-chars.clear   { filter: none; user-select: all; }
+.code-hint { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 12px; }
+
+.check-list { display: flex; flex-direction: column; gap: 10px; }
+.check-item {
+  display: flex; align-items: center; gap: 13px; padding: 13px 15px;
+  border: 1.5px solid var(--border-dark); border-radius: var(--r-sm);
+  font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; background: var(--surface);
+}
+.check-item:hover { background: var(--surface2); }
+.check-item.on { border-color: #4a9a5a; background: #f0faf2; color: #2a6a38; }
+.check-box { width: 18px; height: 18px; flex-shrink: 0; }
+.inline-fb { font-family: 'DM Mono', monospace; font-size: 12px; min-height: 16px; }
+
+/* ════════════════════════ LOGIN ════════════════════════ */
+.login-wrap { width: 100%; max-width: 440px; padding: 0 24px; display: flex; flex-direction: column; gap: 22px; }
+
+/* ════════════════════════ DASHBOARD ════════════════════════ */
+.dash-wrap { max-width: 580px; margin: 0 auto; padding: 0 24px 48px; width: 100%; }
+.dash-topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 22px; }
+.dash-user-name { font-size: 15px; font-weight: 700; }
+.dash-user-code { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-top: 1px; }
+
+.balance-card {
+  background: var(--accent); color: #fff; border-radius: var(--r);
+  padding: 28px 26px; margin-bottom: 14px; position: relative; overflow: hidden;
+}
+.balance-card::before {
+  content: ''; position: absolute; right: -40px; top: -40px;
+  width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.05);
+}
+.balance-label-top { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; opacity: .55; margin-bottom: 10px; }
+.balance-num { font-size: clamp(40px,9vw,60px); font-weight: 900; letter-spacing: -2px; line-height: 1; }
+.balance-currency { font-family: 'DM Mono', monospace; font-size: .32em; opacity: .5; vertical-align: top; margin-top: .24em; display: inline-block; letter-spacing: 1px; margin-right: 4px; }
+.balance-sub { font-family: 'DM Mono', monospace; font-size: 12px; opacity: .45; margin-top: 12px; }
+.admin-badge { display: inline-block; background: rgba(255,255,255,.14); font-family: 'DM Mono', monospace; font-size: 10px; padding: 3px 10px; border-radius: 99px; letter-spacing: 1px; margin-top: 10px; }
+
+.action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+@media (min-width: 520px) { .action-row { grid-template-columns: 1fr 1fr; } }
+
+.action-btn {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r);
+  padding: 18px 16px; cursor: pointer; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 10px; transition: all .15s; font-family: 'Epilogue', sans-serif; text-align: left;
+}
+.action-btn:hover { background: var(--surface2); border-color: var(--border-dark); transform: translateY(-1px); }
+.action-btn:active { transform: translateY(0); }
+.action-icon {
+  width: 36px; height: 36px; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+}
+.action-label { font-size: 14px; font-weight: 700; }
+.action-desc { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+.section-title-sm { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; font-family: 'DM Mono', monospace; margin-bottom: 12px; }
+
+.tx-list { display: flex; flex-direction: column; gap: 8px; }
+.tx-row {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-sm); transition: background .12s;
+}
+.tx-row:hover { background: var(--surface2); }
+.tx-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--surface2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-desc { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-time { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.tx-amt  { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; flex-shrink: 0; }
+.tx-amt.pos { color: #3a8a4a; }
+.tx-amt.neg { color: #b05050; }
+.tx-empty { text-align: center; padding: 36px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-sm); }
+
+/* ════════════════════════ SEND / RECEIVE / ACCOUNT pages ════════════════════════ */
+.page-wrap { max-width: 480px; margin: 0 auto; padding: 0 24px 48px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
+.page-title { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 5px; }
+.page-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+
+.recipient-preview {
+  background: var(--surface2); border: 1.5px solid #c8e8cc; border-radius: var(--r-sm);
+  padding: 13px 16px; font-family: 'DM Mono', monospace; font-size: 13px;
+  display: flex; justify-content: space-between; align-items: center; animation: fadeUp .2s ease;
+}
+.recipient-name { font-size: 14px; font-weight: 700; font-family: 'Epilogue', sans-serif; }
+.recipient-sub  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.receive-code-card { background: var(--surface); border: 1.5px solid var(--border-dark); border-radius: var(--r); padding: 36px 24px; text-align: center; }
+.receive-code-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 18px; }
+.receive-code-val { font-family: 'DM Mono', monospace; font-size: clamp(30px,10vw,46px); letter-spacing: 10px; font-weight: 500; line-height: 1; }
+
+.err-msg { font-family: 'DM Mono', monospace; font-size: 12px; color: #b05050; min-height: 14px; }
+
+/* ════════════════════════ TOAST ════════════════════════ */
+#toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: var(--accent); color: #fff;
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 12px 22px; border-radius: 99px; z-index: 999;
+  opacity: 0; transition: transform .28s ease, opacity .28s ease;
+  white-space: nowrap; max-width: 90vw; text-align: center; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.err  { background: #b05050; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- ════════════════════════════════ LANDING ════════════════════════════════ -->
+<div class="screen active" id="screen-landing">
+  <div class="landing-wrap">
+    <div>
+      <div class="topbar">
+        <div class="logo">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <rect width="26" height="26" rx="7" fill="#111110"/>
+            <path d="M13 6v14M9.5 9.5C9.5 8 11 7 13 7c2.2 0 3.5 1.2 3.5 2.8 0 1.4-1 2.4-3.5 3-2.5.6-3.5 1.7-3.5 3.2C9.5 17.8 11 19 13 19c2.2 0 3.5-1 3.5-2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          Air Dollars
+        </div>
+      </div>
+      <div class="landing-hero">
+        <div class="landing-h1">BET.<br><em>RECEIVE.</em><br>REPEAT.</div>
+        <p class="landing-tagline">A private peer-to-peer balance network. Transfer instantly using account codes.</p>
+        <div class="landing-actions">
+          <button class="btn btn-primary btn-full" onclick="showOnboard()">Open an Account</button>
+          <button class="btn btn-ghost btn-full" onclick="goLogin()">Sign In</button>
+        </div>
+      </div>
+    </div>
+    <div class="landing-foot">Accounts stored locally on this device.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ ONBOARDING ════════════════════════════════ -->
+<div class="screen" id="screen-onboard">
+  <div class="onboard-inner">
+    <div class="topbar">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+          <rect width="26" height="26" rx="7" fill="#111110"/>
+          <path d="M13 6v14M9.5 9.5C9.5 8 11 7 13 7c2.2 0 3.5 1.2 3.5 2.8 0 1.4-1 2.4-3.5 3-2.5.6-3.5 1.7-3.5 3.2C9.5 17.8 11 19 13 19c2.2 0 3.5-1 3.5-2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Air Dollars
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="ob-prog" style="width:0%"></div>
+    </div>
+
+    <!-- Step 1: Name -->
+    <div class="step active" id="ob-1">
+      <div>
+        <div class="step-eyebrow">01 / 04 &nbsp;—&nbsp; IDENTITY</div>
+        <div class="step-title">What's your name?</div>
+        <div class="step-body">Your display name appears on transfers so recipients know who's sending.</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Display Name</div>
+        <input type="text" id="reg-name" placeholder="insert name here" maxlength="28" autocomplete="off"
+          onkeydown="if(event.key==='Enter') ob_next(1)">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="ob_next(1)">Continue</button>
+      <button class="back-btn" onclick="goLanding()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+    </div>
+
+    <!-- Step 2: Acknowledgements -->
+    <div class="step" id="ob-2">
+      <div>
+        <div class="step-eyebrow">02 / 04 &nbsp;—&nbsp; ACKNOWLEDGEMENT</div>
+        <div class="step-title">Before we continue.</div>
+        <div class="step-body">Confirm the following to proceed with account creation.</div>
+      </div>
+      <div class="check-list">
+        <div class="check-item" id="ck-1" onclick="toggleCk('ck-1')">
+          <svg class="check-box" viewBox="0 0 18 18" fill="none" id="ck-1-svg">
+            <rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>
+          </svg>
+          Balances exist on this device only
+        </div>
+        <div class="check-item" id="ck-2" onclick="toggleCk('ck-2')">
+          <svg class="check-box" viewBox="0 0 18 18" fill="none" id="ck-2-svg">
+            <rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>
+          </svg>
+          I am responsible for keeping my code safe
+        </div>
+        <div class="check-item" id="ck-3" onclick="toggleCk('ck-3')">
+          <svg class="check-box" viewBox="0 0 18 18" fill="none" id="ck-3-svg">
+            <rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>
+          </svg>
+          Lost codes cannot be recovered
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" id="ob-2-btn" onclick="ob_next(2)" disabled>Continue</button>
+      <button class="back-btn" onclick="ob_back(2)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+    </div>
+
+    <!-- Step 3: Code reveal -->
+    <div class="step" id="ob-3">
+      <div>
+        <div class="step-eyebrow">03 / 04 &nbsp;—&nbsp; YOUR CODE</div>
+        <div class="step-title">Your account code.</div>
+        <div class="step-body">This 7-character code is how you sign in and receive transfers. Write it down — it is not stored anywhere else.</div>
+      </div>
+      <div class="code-box" id="code-box" onclick="revealCode()">
+        <div class="code-box-label">Account Code</div>
+        <div class="code-chars blurred" id="code-display">-------</div>
+        <div class="code-hint" id="code-hint-text">Tap to reveal</div>
+      </div>
+      <button class="btn btn-ghost btn-full btn-sm" id="code-copy-btn" onclick="copyRegCode()" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="8" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 4V3a2 2 0 012-2h5a2 2 0 012 2v7a2 2 0 01-2 2H10" stroke="currentColor" stroke-width="1.3"/></svg>
+        Copy Code
+      </button>
+      <button class="btn btn-primary btn-full" id="ob-3-btn" onclick="ob_next(3)" disabled>I have saved it</button>
+      <button class="back-btn" onclick="ob_back(3)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+    </div>
+
+    <!-- Step 4: Confirm code -->
+    <div class="step" id="ob-4">
+      <div>
+        <div class="step-eyebrow">04 / 04 &nbsp;—&nbsp; VERIFY</div>
+        <div class="step-title">Confirm your code.</div>
+        <div class="step-body">Type your code back in to verify you have it recorded correctly.</div>
+      </div>
+      <div class="field">
+        <div class="field-label">Re-enter Your Code</div>
+        <input type="text" id="reg-confirm" placeholder="XXXXXXX" maxlength="7"
+          style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:22px"
+          oninput="checkConfirm()" autocomplete="off">
+      </div>
+      <div class="inline-fb" id="confirm-fb"></div>
+      <button class="btn btn-primary btn-full" id="ob-4-btn" onclick="ob_next(4)" disabled>Create Account</button>
+      <button class="back-btn" onclick="ob_back(4)">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ LOGIN ════════════════════════════════ -->
+<div class="screen" id="screen-login" style="justify-content:center;align-items:center;background:var(--bg)">
+  <div class="login-wrap">
+    <div>
+      <div class="logo" style="margin-bottom:30px">
+        <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+          <rect width="26" height="26" rx="7" fill="#111110"/>
+          <path d="M13 6v14M9.5 9.5C9.5 8 11 7 13 7c2.2 0 3.5 1.2 3.5 2.8 0 1.4-1 2.4-3.5 3-2.5.6-3.5 1.7-3.5 3.2C9.5 17.8 11 19 13 19c2.2 0 3.5-1 3.5-2.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Air Dollars
+      </div>
+      <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">Welcome back.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:7px;line-height:1.65">Enter your 7-character account code to sign in.</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Account Code</div>
+      <input type="text" id="login-code" placeholder="XXXXXXX" maxlength="7"
+        style="text-transform:uppercase;letter-spacing:8px;text-align:center;font-size:24px;padding:18px"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        onkeydown="if(event.key==='Enter') doLogin()"
+        autocomplete="off">
+    </div>
+    <div class="err-msg" id="login-err"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In</button>
+    <button class="back-btn" onclick="goLanding()" style="justify-content:center">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to start
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ DASHBOARD ════════════════════════════════ -->
+<div class="screen" id="screen-dashboard" style="background:var(--bg)">
+  <div class="dash-wrap">
+    <div class="dash-topbar">
+      <div>
+        <div class="dash-user-name" id="dash-name">--</div>
+        <div class="dash-user-code" id="dash-code">-------</div>
+      </div>
+      <button class="btn btn-muted btn-sm" onclick="showScreen('screen-account')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M2 12c0-2.8 2.2-4 5-4s5 1.2 5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Account
+      </button>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label-top">Available Balance</div>
+      <div class="balance-num">
+        <span class="balance-currency">AD</span><span id="dash-balance">0</span>
+      </div>
+      <div class="balance-sub" id="dash-balance-sub">Air Dollars</div>
+      <div class="admin-badge" id="admin-badge" style="display:none">Administrator</div>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" onclick="goSend()">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 8h12M10 5l4 3-4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="action-label">Send</div>
+          <div class="action-desc">Transfer funds</div>
+        </div>
+      </button>
+      <button class="action-btn" onclick="goReceive()">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M14 8H2M6 11l-4-3 4-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="action-label">Receive</div>
+          <div class="action-desc">Share your code</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="section-title-sm">Recent Transactions</div>
+    <div class="tx-list" id="tx-list">
+      <div class="tx-empty">No transactions yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ SEND ════════════════════════════════ -->
+<div class="screen" id="screen-send" style="background:var(--bg)">
+  <div class="page-wrap">
+    <div>
+      <button class="back-btn" onclick="showScreen('screen-dashboard')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dashboard
+      </button>
+      <div class="page-title">Send Funds</div>
+      <div class="page-sub">Enter the recipient's code and the amount you'd like to send.</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Recipient Code</div>
+      <input type="text" id="send-to" placeholder="XXXXXXX" maxlength="7"
+        style="text-transform:uppercase;letter-spacing:5px;text-align:center;font-size:22px;padding:16px"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,''); lookupRecipient()"
+        autocomplete="off">
+    </div>
+
+    <div id="recipient-preview" style="display:none" class="recipient-preview">
+      <div>
+        <div class="recipient-name" id="rp-name">--</div>
+        <div class="recipient-sub" id="rp-code">--</div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <circle cx="9" cy="9" r="8" fill="#e8f5eb" stroke="#4a9a5a" stroke-width="1.3"/>
+        <path d="M5 9.5l2.8 2.8L13 6.5" stroke="#3a8a4a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Amount (AD)</div>
+      <input type="number" id="send-amount" placeholder="0" min="1" oninput="updateSendPreview()">
+    </div>
+
+    <div class="card" id="send-preview" style="display:none">
+      <div class="stat-row">
+        <span class="stat-key">You send</span>
+        <span class="stat-val" id="sp-send">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">They receive</span>
+        <span class="stat-val" id="sp-receive">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Your new balance</span>
+        <span class="stat-val" id="sp-balance">--</span>
+      </div>
+    </div>
+
+    <div class="err-msg" id="send-err"></div>
+    <button class="btn btn-primary btn-full" onclick="doSend()">Confirm Transfer</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ RECEIVE ════════════════════════════════ -->
+<div class="screen" id="screen-receive" style="background:var(--bg)">
+  <div class="page-wrap">
+    <div>
+      <button class="back-btn" onclick="showScreen('screen-dashboard')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dashboard
+      </button>
+      <div class="page-title">Receive Funds</div>
+      <div class="page-sub">Share your code with the sender — they'll enter it on the Send screen.</div>
+    </div>
+
+    <div class="receive-code-card">
+      <div class="receive-code-label">Your Account Code</div>
+      <div class="receive-code-val" id="receive-code-val">-------</div>
+    </div>
+
+    <button class="btn btn-ghost btn-full" onclick="copyMyCode()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="4" width="8" height="9" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M4 4V3a2 2 0 012-2h5a2 2 0 012 2v7a2 2 0 01-2 2H10" stroke="currentColor" stroke-width="1.3"/></svg>
+      Copy Code
+    </button>
+
+    <div class="divider" style="margin:6px 0"></div>
+
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:5px">Request from an account</div>
+      <div class="page-sub">Enter another account's code and an amount to pull funds from them — including the administrator account (AAAAAAA).</div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Source Account Code</div>
+      <input type="text" id="redeem-input" placeholder="XXXXXXX" maxlength="7"
+        style="text-transform:uppercase;letter-spacing:5px;text-align:center;font-size:22px;padding:16px"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="field-label">Amount (AD)</div>
+      <input type="number" id="redeem-amount" placeholder="0" min="1">
+    </div>
+    <div class="err-msg" id="redeem-err"></div>
+    <button class="btn btn-primary btn-full" onclick="doRedeem()">Request Funds</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════ ACCOUNT ════════════════════════════════ -->
+<div class="screen" id="screen-account" style="background:var(--bg)">
+  <div class="page-wrap">
+    <div>
+      <button class="back-btn" onclick="showScreen('screen-dashboard')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dashboard
+      </button>
+      <div class="page-title">Account</div>
+    </div>
+    <div class="card">
+      <div class="stat-row">
+        <span class="stat-key">Name</span>
+        <span class="stat-val" id="acc-name">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Account Code</span>
+        <span class="stat-val" id="acc-code" style="letter-spacing:3px;cursor:pointer" onclick="copyMyCode()" title="Tap to copy">-------</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Balance</span>
+        <span class="stat-val" id="acc-balance">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Member Since</span>
+        <span class="stat-val" id="acc-since">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Total Sent</span>
+        <span class="stat-val" id="acc-sent">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Total Received</span>
+        <span class="stat-val" id="acc-received">--</span>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-full" style="color:#b05050;border-color:#e8cccc" onclick="doLogout()">Sign Out</button>
+  </div>
+</div>
+
+<script>
+// ── STORAGE ──
+const DB_KEY = 'airdollars_v3';
+const ADMIN  = 'AAAAAAA';
+
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || { accounts:{} }; }
+  catch { return { accounts:{} }; }
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+function getAccount(code) {
+  if (code === ADMIN) return { code:ADMIN, name:'Administrator', balance:Infinity, isAdmin:true, transactions:[], stats:{sent:0,received:0}, createdAt:0 };
+  return loadDB().accounts[code] || null;
+}
+function saveAccount(acc) {
+  if (acc.code === ADMIN) return;
+  const db = loadDB();
+  db.accounts[acc.code] = acc;
+  saveDB(db);
+}
+
+// ── SESSION ──
+function getSession() { try { return JSON.parse(sessionStorage.getItem('ad_sess')); } catch { return null; } }
+function setSession(c) { sessionStorage.setItem('ad_sess', JSON.stringify({code:c})); }
+function clearSession()  { sessionStorage.removeItem('ad_sess'); }
+
+// ── UTILS ──
+function genCode() {
+  const ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c = '';
+  for (let i=0;i<7;i++) c += ch[Math.floor(Math.random()*ch.length)];
+  return c === ADMIN ? genCode() : c;
+}
+function fmt(n) { return isFinite(n) ? Math.floor(n).toLocaleString('en-US') : '∞'; }
+function txid() { return Math.random().toString(36).slice(2,10).toUpperCase(); }
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000)    return 'just now';
+  if (d < 3600000)  return Math.floor(d/60000) + 'm ago';
+  if (d < 86400000) return Math.floor(d/3600000) + 'h ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── TOAST ──
+let _tt;
+function toast(msg, isErr=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(_tt);
+  _tt = setTimeout(()=>t.className='', 2800);
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if (id==='screen-dashboard') refreshDash();
+  if (id==='screen-account')   refreshAccount();
+  if (id==='screen-receive') {
+    const s=getSession();
+    if(s){ document.getElementById('receive-code-val').textContent=s.code; }
+    document.getElementById('redeem-input').value='';
+    document.getElementById('redeem-amount').value='';
+    document.getElementById('redeem-err').textContent='';
+  }
+}
+function goLanding()  { clearOnboard(); showScreen('screen-landing'); }
+function goLogin()    { document.getElementById('login-code').value=''; document.getElementById('login-err').textContent=''; showScreen('screen-login'); }
+function goSend()     {
+  document.getElementById('send-to').value='';
+  document.getElementById('send-amount').value='';
+  document.getElementById('send-err').textContent='';
+  document.getElementById('recipient-preview').style.display='none';
+  document.getElementById('send-preview').style.display='none';
+  resolvedRecipient=null;
+  showScreen('screen-send');
+}
+function goReceive()  { showScreen('screen-receive'); }
+
+// ── ONBOARDING ──
+let ob = { name:'', code:'', revealed:false };
+const OB_PROG = {1:'0%',2:'33%',3:'66%',4:'100%'};
+
+function showOnboard() {
+  clearOnboard();
+  ob = { name:'', code: genCode(), revealed: false };
+  document.getElementById('code-display').textContent = ob.code;
+  document.getElementById('code-display').className = 'code-chars blurred';
+  document.getElementById('code-hint-text').textContent = 'Tap to reveal';
+  document.getElementById('code-copy-btn').style.display = 'none';
+  document.getElementById('ob-3-btn').disabled = true;
+  document.getElementById('code-box').onclick = revealCode;
+  document.getElementById('code-box').style.cursor = 'pointer';
+  showScreen('screen-onboard');
+  setStep(1);
+}
+function clearOnboard() {
+  document.getElementById('reg-name').value='';
+  document.getElementById('reg-confirm').value='';
+  document.getElementById('confirm-fb').textContent='';
+  document.getElementById('ob-4-btn').disabled=true;
+  document.getElementById('ob-2-btn').disabled=true;
+  ['ck-1','ck-2','ck-3'].forEach(id=>{
+    document.getElementById(id).classList.remove('on');
+    document.getElementById(id+'-svg').innerHTML='<rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>';
+  });
+}
+function setStep(n) {
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('ob-'+n).classList.add('active');
+  document.getElementById('ob-prog').style.width=OB_PROG[n];
+}
+function ob_next(step) {
+  if (step===1) {
+    const name = document.getElementById('reg-name').value.trim();
+    if (!name) { toast('Enter a display name to continue.',true); return; }
+    ob.name = name; setStep(2);
+  } else if (step===2) {
+    setStep(3);
+  } else if (step===3) {
+    if (!ob.revealed) { toast('Reveal your code first.',true); return; }
+    setStep(4);
+  } else if (step===4) {
+    const v = document.getElementById('reg-confirm').value.toUpperCase();
+    if (v !== ob.code) { toast('Codes do not match.',true); return; }
+    finishOnboard();
+  }
+}
+function ob_back(step) { setStep(step-1); }
+function toggleCk(id) {
+  const el = document.getElementById(id);
+  const on = el.classList.toggle('on');
+  document.getElementById(id+'-svg').innerHTML = on
+    ? '<rect x="1" y="1" width="16" height="16" rx="5" fill="#e8f5eb" stroke="#4a9a5a" stroke-width="1.5"/><path d="M4.5 9l3 3L13.5 6" stroke="#3a8a4a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+    : '<rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>';
+  const all = ['ck-1','ck-2','ck-3'].every(i=>document.getElementById(i).classList.contains('on'));
+  document.getElementById('ob-2-btn').disabled = !all;
+}
+function revealCode() {
+  document.getElementById('code-display').className='code-chars clear';
+  document.getElementById('code-hint-text').textContent='Keep this somewhere safe';
+  document.getElementById('code-copy-btn').style.display='inline-flex';
+  document.getElementById('ob-3-btn').disabled=false;
+  document.getElementById('code-box').onclick=null;
+  document.getElementById('code-box').style.cursor='default';
+  ob.revealed=true;
+}
+function copyRegCode() { navigator.clipboard?.writeText(ob.code); toast('Code copied'); }
+function checkConfirm() {
+  const v = document.getElementById('reg-confirm').value.toUpperCase();
+  const fb = document.getElementById('confirm-fb');
+  const btn = document.getElementById('ob-4-btn');
+  if (!v) { fb.textContent=''; btn.disabled=true; return; }
+  if (v===ob.code) { fb.style.color='#3a8a4a'; fb.textContent='Looks good.'; btn.disabled=false; }
+  else             { fb.style.color='#b05050'; fb.textContent='Does not match.'; btn.disabled=true; }
+}
+function finishOnboard() {
+  const acc = {
+    code: ob.code, name: ob.name, balance: 250, isAdmin: false,
+    transactions: [{ id:txid(), type:'credit', desc:'Account opened', amount:250, ts:Date.now() }],
+    stats: { sent:0, received:250 }, createdAt: Date.now()
+  };
+  saveAccount(acc);
+  setSession(acc.code);
+  showScreen('screen-dashboard');
+}
+
+// ── LOGIN ──
+function doLogin() {
+  const code = document.getElementById('login-code').value.trim().toUpperCase();
+  const err  = document.getElementById('login-err');
+  err.textContent='';
+  if (code.length!==7) { err.textContent='Codes are exactly 7 characters.'; return; }
+  if (code===ADMIN) { setSession(ADMIN); showScreen('screen-dashboard'); return; }
+  const acc = getAccount(code);
+  if (!acc) { err.textContent='No account found with that code.'; return; }
+  setSession(code);
+  showScreen('screen-dashboard');
+}
+function doLogout() { clearSession(); goLanding(); }
+
+// ── DASHBOARD ──
+function refreshDash() {
+  const s=getSession(); if(!s) return;
+  const acc=getAccount(s.code); if(!acc) return;
+  document.getElementById('dash-name').textContent=acc.name;
+  document.getElementById('dash-code').textContent=acc.code;
+  document.getElementById('dash-balance').textContent=fmt(acc.balance);
+  document.getElementById('dash-balance-sub').textContent=acc.isAdmin?'Unlimited funds':'Air Dollars';
+  document.getElementById('admin-badge').style.display=acc.isAdmin?'inline-block':'none';
+  renderTxList(acc.isAdmin ? [] : (acc.transactions||[]));
+}
+function renderTxList(txs) {
+  const el=document.getElementById('tx-list');
+  if (!txs||txs.length===0) { el.innerHTML='<div class="tx-empty">No transactions yet.</div>'; return; }
+  el.innerHTML=[...txs].reverse().slice(0,40).map(tx=>{
+    const pos=tx.amount>=0;
+    const icon=pos
+      ? '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M14 8H2M6 11l-4-3 4-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M10 5l4 3-4 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return `<div class="tx-row">
+      <div class="tx-icon">${icon}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${esc(tx.desc)}</div>
+        <div class="tx-time">${timeAgo(tx.ts)}</div>
+      </div>
+      <div class="tx-amt ${pos?'pos':'neg'}">${pos?'+':''}${fmt(tx.amount)} AD</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SEND ──
+let resolvedRecipient = null;
+function lookupRecipient() {
+  const code=document.getElementById('send-to').value.trim().toUpperCase();
+  const prev=document.getElementById('recipient-preview');
+  const s=getSession(); if(!s) return;
+  resolvedRecipient=null;
+  document.getElementById('send-preview').style.display='none';
+  if (code.length===7 && code!==s.code) {
+    const acc=getAccount(code);
+    if (acc && !acc.isAdmin) {
+      resolvedRecipient=acc;
+      document.getElementById('rp-name').textContent=acc.name;
+      document.getElementById('rp-code').textContent=acc.code;
+      prev.style.display='flex';
+      updateSendPreview(); return;
+    }
+    if (acc && acc.isAdmin) {
+      document.getElementById('send-err').textContent='Cannot send to the administrator account.';
+      prev.style.display='none'; return;
+    }
+  }
+  prev.style.display='none';
+  document.getElementById('send-err').textContent='';
+}
+function updateSendPreview() {
+  const s=getSession(); if(!s) return;
+  const me=getAccount(s.code); if(!me) return;
+  const amt=Math.floor(parseFloat(document.getElementById('send-amount').value));
+  const prev=document.getElementById('send-preview');
+  if (!resolvedRecipient||!amt||amt<=0) { prev.style.display='none'; return; }
+  document.getElementById('sp-send').textContent=fmt(amt)+' AD';
+  document.getElementById('sp-receive').textContent=fmt(amt)+' AD';
+  document.getElementById('sp-balance').textContent=(me.isAdmin?'∞':fmt(me.balance-amt))+' AD';
+  prev.style.display='block';
+}
+function doSend() {
+  const s=getSession(); if(!s) return;
+  const me=getAccount(s.code); if(!me) return;
+  const err=document.getElementById('send-err');
+  err.textContent='';
+  const toCode=document.getElementById('send-to').value.trim().toUpperCase();
+  const amt=Math.floor(parseFloat(document.getElementById('send-amount').value));
+  if (!resolvedRecipient||resolvedRecipient.code!==toCode) { err.textContent='Enter a valid recipient code.'; return; }
+  if (!amt||amt<=0) { err.textContent='Enter a valid amount.'; return; }
+  if (!me.isAdmin && amt>me.balance) { err.textContent='Insufficient balance.'; return; }
+  const recipient=getAccount(toCode);
+  if (!recipient||recipient.isAdmin) { err.textContent='Recipient not found.'; return; }
+  // debit sender
+  if (!me.isAdmin) {
+    me.balance-=amt; me.stats.sent=(me.stats.sent||0)+amt;
+    me.transactions.push({id:txid(),type:'send',desc:'Sent to '+recipient.name,amount:-amt,ts:Date.now()});
+    saveAccount(me);
+  }
+  // credit recipient
+  recipient.balance+=amt; recipient.stats.received=(recipient.stats.received||0)+amt;
+  recipient.transactions.push({id:txid(),type:'receive',desc:'Received from '+me.name,amount:amt,ts:Date.now()});
+  saveAccount(recipient);
+  toast(fmt(amt)+' AD sent to '+recipient.name+'.');
+  showScreen('screen-dashboard');
+}
+
+// ── RECEIVE / REQUEST ──
+function copyMyCode() { const s=getSession(); if(!s) return; navigator.clipboard?.writeText(s.code); toast('Code copied'); }
+function doRedeem() {
+  const s=getSession(); if(!s) return;
+  const me=getAccount(s.code); if(!me) return;
+  if (me.isAdmin) { toast('Administrator balance is unlimited.',true); return; }
+  const fromCode=document.getElementById('redeem-input').value.trim().toUpperCase();
+  const amt=Math.floor(parseFloat(document.getElementById('redeem-amount').value));
+  const errEl=document.getElementById('redeem-err');
+  errEl.textContent='';
+  if (fromCode.length!==7) { errEl.textContent='Enter a valid 7-character code.'; return; }
+  if (fromCode===me.code)  { errEl.textContent='That is your own code.'; return; }
+  if (!amt||amt<=0)        { errEl.textContent='Enter a valid amount.'; return; }
+  const sender=getAccount(fromCode);
+  if (!sender) { errEl.textContent='Account not found.'; return; }
+  if (!sender.isAdmin && sender.balance<amt) { errEl.textContent='That account has insufficient balance.'; return; }
+  // debit sender
+  if (!sender.isAdmin) {
+    sender.balance-=amt; sender.stats.sent=(sender.stats.sent||0)+amt;
+    sender.transactions.push({id:txid(),type:'send',desc:'Sent to '+me.name,amount:-amt,ts:Date.now()});
+    saveAccount(sender);
+  }
+  // credit me
+  me.balance+=amt; me.stats.received=(me.stats.received||0)+amt;
+  me.transactions.push({id:txid(),type:'receive',desc:'Received from '+sender.name,amount:amt,ts:Date.now()});
+  saveAccount(me);
+  document.getElementById('redeem-input').value='';
+  document.getElementById('redeem-amount').value='';
+  toast(fmt(amt)+' AD received from '+sender.name+'.');
+  showScreen('screen-dashboard');
+}
+
+// ── ACCOUNT PAGE ──
+function refreshAccount() {
+  const s=getSession(); if(!s) return;
+  const acc=getAccount(s.code); if(!acc) return;
+  document.getElementById('acc-name').textContent=acc.name;
+  document.getElementById('acc-code').textContent=acc.code;
+  document.getElementById('acc-balance').textContent=fmt(acc.balance)+' AD';
+  document.getElementById('acc-since').textContent=acc.isAdmin?'Always':new Date(acc.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('acc-sent').textContent=fmt(acc.stats?.sent||0)+' AD';
+  document.getElementById('acc-received').textContent=fmt(acc.stats?.received||0)+' AD';
+}
+
+// ── BOOT ──
+(function(){
+  const s=getSession();
+  if (s && getAccount(s.code)) { showScreen('screen-dashboard'); return; }
+  clearSession(); showScreen('screen-landing');
+})();
+</script>
+</body>
+</html>
