@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Air Dollars</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23111110'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='36' font-family='Arial' fill='white'%3E%24%3C/text%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Epilogue:wght@400;500;600;700;800;900&display=swap');
 
@@ -762,6 +763,7 @@ function showOnboard() {
   showScreen('screen-onboard');
   setObStep(1);
 }
+window.showOnboard = showOnboard;
 
 function resetOnboard() {
   _ob = { name: '', code: '', revealed: false };
@@ -966,8 +968,8 @@ function updateSendSummary() {
   btn.disabled = true;
 
   if (toCode.length !== 7) return;
-  var recip = getAccount(toCode);
-  if (!recip || recip.isAdmin) return;
+  var recipientAccount = getAccount(toCode);
+  if (!recipientAccount || recipientAccount.isAdmin) return;
   if (!amt || amt <= 0) return;
   if (!me.isAdmin && amt > me.balance) {
     document.getElementById('send-err').textContent = 'Insufficient balance.'; return;
@@ -993,17 +995,17 @@ function openConfirm() {
   if (toCode === s.code)    { errEl.textContent = 'You cannot send to yourself.'; return; }
   if (!amt || amt <= 0)     { errEl.textContent = 'Enter a valid amount.'; return; }
 
-  var recip = getAccount(toCode);
-  if (!recip)               { errEl.textContent = 'No account found with that code.'; return; }
-  if (recip.isAdmin)        { errEl.textContent = 'Cannot send to the administrator account.'; return; }
+  var recipientAccount = getAccount(toCode);
+  if (!recipientAccount)               { errEl.textContent = 'No account found with that code.'; return; }
+  if (recipientAccount.isAdmin)        { errEl.textContent = 'Cannot send to the administrator account.'; return; }
   if (!me.isAdmin && amt > me.balance) { errEl.textContent = 'Insufficient balance.'; return; }
 
   // Store for execution
   _pending = { fromCode: s.code, toCode: toCode, amount: amt };
 
   // Populate sheet
-  document.getElementById('cf-to').textContent      = recip.name;
-  document.getElementById('cf-code').textContent    = recip.code;
+  document.getElementById('cf-to').textContent      = recipientAccount.name;
+  document.getElementById('cf-code').textContent    = recipientAccount.code;
   document.getElementById('cf-amount').textContent  = fmt(amt) + ' AD';
   document.getElementById('cf-balance').textContent = me.isAdmin ? '∞ AD' : fmt(me.balance - amt) + ' AD';
 
@@ -1019,10 +1021,10 @@ function executeTransfer() {
   if (!_pending) { closeConfirm(); return; }
 
   var me    = getAccount(_pending.fromCode);
-  var recip = getAccount(_pending.toCode);
+  var recipientAccount = getAccount(_pending.toCode);
   var amt   = _pending.amount;
 
-  if (!me || !recip) { closeConfirm(); toast('Transfer failed. Account not found.', 'err'); return; }
+  if (!me || !recipientAccount) { closeConfirm(); toast('Transfer failed. Account not found.', 'err'); return; }
   if (!me.isAdmin && amt > me.balance) { closeConfirm(); toast('Insufficient balance.', 'err'); return; }
 
   // Debit sender
@@ -1031,7 +1033,7 @@ function executeTransfer() {
     me.stats = me.stats || {};
     me.stats.sent = (me.stats.sent || 0) + amt;
     me.transactions = me.transactions || [];
-    me.transactions.push({ id: txid(), type: 'send', desc: 'Sent to ' + recip.name, amount: -amt, ts: Date.now() });
+    me.transactions.push({ id: txid(), type: 'send', desc: 'Sent to ' + recipientAccount.name, amount: -amt, ts: Date.now() });
     saveAccount(me);
   }
 
