@@ -80,11 +80,11 @@ input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17,17,16,.
 input::placeholder { color: var(--text-dim); }
 
 /* ── CARD ── */
-.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 20px; }
-.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); padding: 20px 24px; }
+.stat-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); gap: 16px; }
 .stat-row:last-child { border-bottom: none; }
-.stat-key { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; }
-.stat-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.stat-key { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; flex-shrink: 0; }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500; text-align: right; word-break: break-all; }
 
 /* ── BACK BTN ── */
 .back-btn {
@@ -100,7 +100,7 @@ input::placeholder { color: var(--text-dim); }
 
 /* ════════════════════════ LANDING ════════════════════════ */
 .landing-wrap {
-  max-width: 480px; margin: 0 auto; padding: 0 24px 40px;
+  max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 40px) 40px;
   flex: 1; display: flex; flex-direction: column; justify-content: space-between;
 }
 .topbar { padding: 20px 0; display: flex; align-items: center; justify-content: space-between; }
@@ -113,7 +113,7 @@ input::placeholder { color: var(--text-dim); }
 
 /* ════════════════════════ ONBOARDING ════════════════════════ */
 .onboard-inner {
-  width: 100%; max-width: 480px; margin: 0 auto; padding: 0 24px 48px;
+  width: 100%; max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 40px) 48px;
   flex: 1; display: flex; flex-direction: column;
 }
 .progress-track { height: 2px; background: var(--border); border-radius: 99px; overflow: hidden; margin: 4px 0 36px; }
@@ -147,10 +147,10 @@ input::placeholder { color: var(--text-dim); }
 .inline-fb { font-family: 'DM Mono', monospace; font-size: 12px; min-height: 16px; }
 
 /* ════════════════════════ LOGIN ════════════════════════ */
-.login-wrap { width: 100%; max-width: 440px; padding: 0 24px; display: flex; flex-direction: column; gap: 22px; }
+.login-wrap { width: 100%; max-width: 480px; padding: 0 clamp(16px, 5vw, 40px); display: flex; flex-direction: column; gap: 22px; }
 
 /* ════════════════════════ DASHBOARD ════════════════════════ */
-.dash-wrap { max-width: 580px; margin: 0 auto; padding: 0 24px 48px; width: 100%; }
+.dash-wrap { max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 5vw, 40px) 56px; width: 100%; }
 .dash-topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0 22px; }
 .dash-user-name { font-size: 15px; font-weight: 700; }
 .dash-user-code { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); letter-spacing: 2px; margin-top: 1px; }
@@ -204,21 +204,47 @@ input::placeholder { color: var(--text-dim); }
 .tx-empty { text-align: center; padding: 36px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r-sm); }
 
 /* ════════════════════════ SEND / RECEIVE / ACCOUNT pages ════════════════════════ */
-.page-wrap { max-width: 480px; margin: 0 auto; padding: 0 24px 48px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
-.page-title { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 5px; }
-.page-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+.page-wrap {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 5vw, 40px) 56px;
+  display: flex; flex-direction: column; gap: 18px; flex: 1;
+}
+.page-title { font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -.5px; margin-bottom: 5px; }
+.page-sub { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+
+/* stat rows — key and value never crammed */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-key {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .8px;
+  flex-shrink: 0;
+}
+.stat-val {
+  font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+  text-align: right; word-break: break-all;
+}
 
 .recipient-preview {
   background: var(--surface2); border: 1.5px solid #c8e8cc; border-radius: var(--r-sm);
   padding: 13px 16px; font-family: 'DM Mono', monospace; font-size: 13px;
-  display: flex; justify-content: space-between; align-items: center; animation: fadeUp .2s ease;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; animation: fadeUp .2s ease;
 }
 .recipient-name { font-size: 14px; font-weight: 700; font-family: 'Epilogue', sans-serif; }
 .recipient-sub  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-.receive-code-card { background: var(--surface); border: 1.5px solid var(--border-dark); border-radius: var(--r); padding: 36px 24px; text-align: center; }
+.receive-code-card { background: var(--surface); border: 1.5px solid var(--border-dark); border-radius: var(--r); padding: 40px 32px; text-align: center; }
 .receive-code-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 18px; }
-.receive-code-val { font-family: 'DM Mono', monospace; font-size: clamp(30px,10vw,46px); letter-spacing: 10px; font-weight: 500; line-height: 1; }
+.receive-code-val { font-family: 'DM Mono', monospace; font-size: clamp(28px, 7vw, 48px); letter-spacing: clamp(4px, 2vw, 12px); font-weight: 500; line-height: 1; }
 
 .err-msg { font-family: 'DM Mono', monospace; font-size: 12px; color: #b05050; min-height: 14px; }
 
@@ -254,7 +280,7 @@ input::placeholder { color: var(--text-dim); }
         </div>
       </div>
       <div class="landing-hero">
-        <div class="landing-h1">BET.<br><em>RECEIVE.</em><br>REPEAT.</div>
+        <div class="landing-h1">SEND.<br><em>RECEIVE.</em><br>REPEAT.</div>
         <p class="landing-tagline">A private peer-to-peer balance network. Transfer instantly using account codes.</p>
         <div class="landing-actions">
           <button class="btn btn-primary btn-full" onclick="showOnboard()">Open an Account</button>
@@ -291,7 +317,7 @@ input::placeholder { color: var(--text-dim); }
       </div>
       <div class="field">
         <div class="field-label">Display Name</div>
-        <input type="text" id="reg-name" placeholder="insert name here" maxlength="28" autocomplete="off"
+        <input type="text" id="reg-name" placeholder="e.g. Jordan Kim" maxlength="28" autocomplete="off"
           onkeydown="if(event.key==='Enter') ob_next(1)">
       </div>
       <button class="btn btn-primary btn-full" onclick="ob_next(1)">Continue</button>
@@ -689,7 +715,6 @@ function goSend()     {
   document.getElementById('send-err').textContent='';
   document.getElementById('recipient-preview').style.display='none';
   document.getElementById('send-preview').style.display='none';
-  resolvedRecipient=null;
   showScreen('screen-send');
 }
 function goReceive()  { showScreen('screen-receive'); }
@@ -827,36 +852,32 @@ function renderTxList(txs) {
 }
 
 // ── SEND ──
-let resolvedRecipient = null;
 function lookupRecipient() {
   const code=document.getElementById('send-to').value.trim().toUpperCase();
   const prev=document.getElementById('recipient-preview');
+  const errEl=document.getElementById('send-err');
   const s=getSession(); if(!s) return;
-  resolvedRecipient=null;
+  errEl.textContent='';
   document.getElementById('send-preview').style.display='none';
-  if (code.length===7 && code!==s.code) {
-    const acc=getAccount(code);
-    if (acc && !acc.isAdmin) {
-      resolvedRecipient=acc;
-      document.getElementById('rp-name').textContent=acc.name;
-      document.getElementById('rp-code').textContent=acc.code;
-      prev.style.display='flex';
-      updateSendPreview(); return;
-    }
-    if (acc && acc.isAdmin) {
-      document.getElementById('send-err').textContent='Cannot send to the administrator account.';
-      prev.style.display='none'; return;
-    }
-  }
   prev.style.display='none';
-  document.getElementById('send-err').textContent='';
+  if (code.length!==7) return;
+  if (code===s.code) { errEl.textContent='That is your own code.'; return; }
+  const acc=getAccount(code);
+  if (!acc) { errEl.textContent='No account found with that code.'; return; }
+  if (acc.isAdmin) { errEl.textContent='Cannot send to the administrator account.'; return; }
+  document.getElementById('rp-name').textContent=acc.name;
+  document.getElementById('rp-code').textContent=acc.code;
+  prev.style.display='flex';
+  updateSendPreview();
 }
 function updateSendPreview() {
   const s=getSession(); if(!s) return;
   const me=getAccount(s.code); if(!me) return;
+  const code=document.getElementById('send-to').value.trim().toUpperCase();
   const amt=Math.floor(parseFloat(document.getElementById('send-amount').value));
   const prev=document.getElementById('send-preview');
-  if (!resolvedRecipient||!amt||amt<=0) { prev.style.display='none'; return; }
+  const acc=code.length===7?getAccount(code):null;
+  if (!acc||acc.isAdmin||!amt||amt<=0) { prev.style.display='none'; return; }
   document.getElementById('sp-send').textContent=fmt(amt)+' AD';
   document.getElementById('sp-receive').textContent=fmt(amt)+' AD';
   document.getElementById('sp-balance').textContent=(me.isAdmin?'∞':fmt(me.balance-amt))+' AD';
@@ -869,8 +890,12 @@ function doSend() {
   err.textContent='';
   const toCode=document.getElementById('send-to').value.trim().toUpperCase();
   const amt=Math.floor(parseFloat(document.getElementById('send-amount').value));
-  if (!resolvedRecipient||resolvedRecipient.code!==toCode) { err.textContent='Enter a valid recipient code.'; return; }
-  if (!amt||amt<=0) { err.textContent='Enter a valid amount.'; return; }
+  if (toCode.length!==7)   { err.textContent='Enter a valid 7-character recipient code.'; return; }
+  if (toCode===s.code)     { err.textContent='You cannot send to yourself.'; return; }
+  if (!amt||amt<=0)        { err.textContent='Enter a valid amount.'; return; }
+  const recipient=getAccount(toCode);
+  if (!recipient)          { err.textContent='No account found with that code.'; return; }
+  if (recipient.isAdmin)   { err.textContent='Cannot send to the administrator account.'; return; }
   if (!me.isAdmin && amt>me.balance) { err.textContent='Insufficient balance.'; return; }
   const recipient=getAccount(toCode);
   if (!recipient||recipient.isAdmin) { err.textContent='Recipient not found.'; return; }
