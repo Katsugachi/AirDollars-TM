@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Air Dollars</title>
+<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23111110'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-size='36' font-family='Arial' fill='white'%3E%24%3C/text%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Epilogue:wght@400;500;600;700;800;900&display=swap');
@@ -193,6 +194,12 @@ input.input-err { border-color: var(--red) !important; }
 .action-desc  { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
 
 .section-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.p2p-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.p2p-id {
+  font-family: 'DM Mono', monospace; font-size: 14px;
+  padding: 10px 12px; border: 1.5px solid var(--border-dark);
+  border-radius: var(--r-sm); background: var(--surface2); letter-spacing: 1px;
+}
 
 /* tx list */
 .tx-list { display: flex; flex-direction: column; gap: 8px; }
@@ -514,6 +521,21 @@ input.input-err { border-color: var(--red) !important; }
       </button>
     </div>
 
+    <div class="card" style="padding:16px 18px;margin-bottom:24px">
+      <div class="section-label" style="margin-bottom:6px">Device Link (P2P)</div>
+      <div class="page-sub" style="margin-bottom:10px">Connect devices by Peer ID to discover remote accounts.</div>
+      <div class="p2p-row" style="justify-content:space-between;flex-wrap:wrap">
+        <div class="p2p-id" id="p2p-my-id">---- ----</div>
+        <button class="btn btn-ghost btn-sm" onclick="copyMyPeerId()">Copy ID</button>
+      </div>
+      <div class="p2p-row" style="margin-top:10px">
+        <input type="text" id="p2p-peer-input" placeholder="Peer ID (e.g. 1234-5678)" maxlength="9" autocomplete="off"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8).replace(/(.{4})/, '$1-')">
+        <button class="btn btn-primary btn-sm" id="p2p-connect-btn" onclick="connectPeerByInput()">Connect</button>
+      </div>
+      <div class="msg" id="p2p-status" style="margin-top:8px">P2P idle.</div>
+    </div>
+
     <!-- tx -->
     <div class="section-label">Recent Transactions</div>
     <div class="tx-list" id="tx-list">
@@ -643,6 +665,7 @@ input.input-err { border-color: var(--red) !important; }
 // ══════════════════════════════════════
 var DB_KEY   = 'airdollars_v4';
 var ADMIN_CODE = 'AAAAAAA';
+var PEER_ID_KEY = 'airdollars_peer_id_v1';
 
 function loadDB() {
   try { return JSON.parse(localStorage.getItem(DB_KEY)) || { accounts: {} }; }
@@ -699,6 +722,298 @@ function timeAgo(ts) {
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ══════════════════════════════════════
+//  P2P (PEERJS)
+// ══════════════════════════════════════
+var peer = null;
+var myPeerId = '';
+var connections = {};
+var pendingConnects = {};
+var remoteAccounts = {};
+var pendingDiscovery = {};
+var pendingTransfers = {};
+var p2pReconnectTimer = null;
+var _discoverSeq = 0;
+
+function normalizePeerId(v) {
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+}
+function formatPeerId(raw) {
+  var id = normalizePeerId(raw);
+  if (id.length <= 4) return id;
+  return id.slice(0, 4) + '-' + id.slice(4);
+}
+function generatePeerId() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var out = '';
+  for (var i = 0; i < 8; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+function ensurePeerId() {
+  var existing = normalizePeerId(localStorage.getItem(PEER_ID_KEY));
+  if (existing.length === 8) return existing;
+  var created = generatePeerId();
+  localStorage.setItem(PEER_ID_KEY, created);
+  return created;
+}
+function localAccountDirectory() {
+  var db = loadDB();
+  return Object.keys(db.accounts || {}).map(function(code) {
+    var a = db.accounts[code];
+    return { code: a.code, name: a.name };
+  });
+}
+function setP2PStatus(msg, isErr) {
+  var el = document.getElementById('p2p-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'msg' + (isErr ? ' err' : '');
+}
+function refreshP2PUI() {
+  var idEl = document.getElementById('p2p-my-id');
+  if (idEl) idEl.textContent = formatPeerId(myPeerId || ensurePeerId()) || '---- ----';
+}
+function upsertRemoteAccount(account, peerId) {
+  if (!account || !account.code || account.code === ADMIN_CODE) return;
+  var code = String(account.code).toUpperCase();
+  if (code.length !== 7) return;
+  remoteAccounts[code] = {
+    code: code,
+    name: account.name || ('Remote ' + code),
+    peerId: peerId,
+    remote: true,
+    balance: isFinite(account.balance) ? account.balance : null,
+    seenAt: Date.now()
+  };
+}
+function sendP2P(peerId, payload) {
+  var conn = connections[peerId];
+  if (!conn || !conn.open) return false;
+  try {
+    conn.send(JSON.stringify(payload));
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+function broadcastP2P(payload) {
+  Object.keys(connections).forEach(function(pid) { sendP2P(pid, payload); });
+}
+function attemptConnect(peerId) {
+  if (!peer || peer.destroyed || !peerId || peerId === myPeerId) return false;
+  if (connections[peerId] && connections[peerId].open) return false;
+  if (pendingConnects[peerId]) return false;
+  if (peer.disconnected && !peer.destroyed) { try { peer.reconnect(); } catch (_) {} }
+  try {
+    var conn = peer.connect(peerId, { reliable: true, serialization: 'raw' });
+    pendingConnects[peerId] = conn;
+    handleConnection(conn);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+function handleConnection(conn) {
+  var pid = String(conn.peer || '');
+  if (!pid) return;
+  connections[pid] = conn;
+  function clearRefs() {
+    if (connections[pid] === conn) delete connections[pid];
+    if (pendingConnects[pid] === conn) delete pendingConnects[pid];
+  }
+  function onOpen() {
+    if (pendingConnects[pid] === conn) delete pendingConnects[pid];
+    setP2PStatus('Connected to ' + formatPeerId(pid) + '.');
+    sendP2P(pid, { type: 'hello', peerId: myPeerId, accounts: localAccountDirectory() });
+    refreshP2PUI();
+  }
+  if (conn.open) onOpen();
+  else conn.on('open', onOpen);
+  conn.on('data', function(raw) {
+    try {
+      var msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      handleP2PMessage(pid, msg);
+    } catch (_) {}
+  });
+  conn.on('close', function() {
+    clearRefs();
+    setP2PStatus('Disconnected from ' + formatPeerId(pid) + '.');
+    refreshP2PUI();
+  });
+  conn.on('error', function() {
+    clearRefs();
+    refreshP2PUI();
+  });
+}
+function handleP2PMessage(pid, msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'hello') {
+    (msg.accounts || []).forEach(function(a) { upsertRemoteAccount(a, pid); });
+    return;
+  }
+  if (msg.type === 'discovery_request') {
+    var dAcc = getAccount(String(msg.code || '').toUpperCase());
+    sendP2P(pid, {
+      type: 'discovery_response',
+      reqId: msg.reqId,
+      found: !!(dAcc && !dAcc.isAdmin),
+      account: dAcc && !dAcc.isAdmin ? { code: dAcc.code, name: dAcc.name, balance: dAcc.balance } : null
+    });
+    return;
+  }
+  if (msg.type === 'discovery_response') {
+    var p = pendingDiscovery[msg.reqId];
+    if (!p) return;
+    p.remaining = Math.max(0, (p.remaining || 0) - 1);
+    if (msg.found && msg.account) {
+      upsertRemoteAccount(msg.account, pid);
+      clearTimeout(p.timer);
+      delete pendingDiscovery[msg.reqId];
+      p.resolve(remoteAccounts[msg.account.code] || null);
+      return;
+    }
+    if (p.remaining === 0) {
+      clearTimeout(p.timer);
+      delete pendingDiscovery[msg.reqId];
+      p.resolve(null);
+    }
+    return;
+  }
+  if (msg.type === 'transfer_request') {
+    var amt = Math.floor(Number(msg.amount || 0));
+    var toCode = String(msg.toCode || '').toUpperCase();
+    var target = getAccount(toCode);
+    if (toCode.length !== 7 || !amt || amt <= 0 || !target || target.isAdmin) {
+      sendP2P(pid, { type: 'transfer_ack', transferId: msg.transferId, ok: false, error: 'Recipient not found.' });
+      return;
+    }
+    target.balance += amt;
+    target.stats = target.stats || {};
+    target.stats.received = (target.stats.received || 0) + amt;
+    target.transactions = target.transactions || [];
+    target.transactions.push({
+      id: txid(), type: 'receive',
+      desc: 'Received from ' + ((msg.from && msg.from.name) || 'Remote sender'),
+      amount: amt, ts: Date.now()
+    });
+    saveAccount(target);
+    sendP2P(pid, {
+      type: 'transfer_ack',
+      transferId: msg.transferId,
+      ok: true,
+      toCode: target.code,
+      toName: target.name,
+      amount: amt
+    });
+    sendP2P(pid, { type: 'balance_update', account: { code: target.code, name: target.name, balance: target.balance } });
+    var sess = getSession();
+    if (sess && sess.code === target.code) refreshDash();
+    return;
+  }
+  if (msg.type === 'transfer_ack') {
+    var t = pendingTransfers[msg.transferId];
+    if (!t) return;
+    clearTimeout(t.timer);
+    delete pendingTransfers[msg.transferId];
+    t.resolve(msg);
+    return;
+  }
+  if (msg.type === 'balance_update' && msg.account) {
+    upsertRemoteAccount(msg.account, pid);
+  }
+}
+function discoverRemoteAccount(code) {
+  code = String(code || '').toUpperCase();
+  if (remoteAccounts[code]) return Promise.resolve(remoteAccounts[code]);
+  var peerIds = Object.keys(connections).filter(function(pid) { return connections[pid] && connections[pid].open; });
+  if (peerIds.length === 0) return Promise.resolve(null);
+  var reqId = txid() + String(Date.now()).slice(-6);
+  return new Promise(function(resolve) {
+    var done = false;
+    var timer = setTimeout(function() {
+      if (done) return;
+      done = true;
+      delete pendingDiscovery[reqId];
+      resolve(null);
+    }, 2200);
+    pendingDiscovery[reqId] = {
+      remaining: peerIds.length,
+      timer: timer,
+      resolve: function(found) {
+        if (done) return;
+        done = true;
+        resolve(found);
+      }
+    };
+    peerIds.forEach(function(pid) {
+      sendP2P(pid, { type: 'discovery_request', reqId: reqId, code: code });
+    });
+  });
+}
+function copyMyPeerId() {
+  if (!myPeerId) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(formatPeerId(myPeerId));
+  toast('Peer ID copied', 'ok');
+}
+function connectPeerByInput() {
+  var input = document.getElementById('p2p-peer-input');
+  if (!input) return;
+  var peerId = normalizePeerId(input.value);
+  if (peerId.length !== 8) { setP2PStatus('Enter a valid 8-character Peer ID.', true); return; }
+  if (peerId === myPeerId) { setP2PStatus('Cannot connect to your own ID.', true); return; }
+  var ok = attemptConnect(peerId);
+  if (!ok) { setP2PStatus('Unable to start that connection.', true); return; }
+  setP2PStatus('Connecting to ' + formatPeerId(peerId) + '...');
+  input.value = '';
+}
+function setupPeer() {
+  if (typeof Peer === 'undefined') { setP2PStatus('P2P unavailable (PeerJS failed to load).', true); return; }
+  myPeerId = ensurePeerId();
+  refreshP2PUI();
+  try {
+    peer = new Peer(myPeerId, {
+      debug: 1,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478' },
+          { urls: 'stun:stun.services.mozilla.com' }
+        ]
+      }
+    });
+  } catch (_) {
+    setP2PStatus('Failed to initialize P2P.', true);
+    return;
+  }
+  peer.on('open', function() {
+    setP2PStatus('Ready. Your ID is ' + formatPeerId(myPeerId) + '.');
+  });
+  peer.on('connection', function(conn) { handleConnection(conn); });
+  peer.on('disconnected', function() {
+    setP2PStatus('Connection lost. Reconnecting...', true);
+    clearTimeout(p2pReconnectTimer);
+    p2pReconnectTimer = setTimeout(function() {
+      if (peer && peer.disconnected && !peer.destroyed) {
+        try { peer.reconnect(); } catch (_) {}
+      }
+    }, 3000);
+  });
+  peer.on('error', function(err) {
+    if (err && (err.type === 'network' || err.type === 'server-error')) {
+      setP2PStatus('Network issue. Retrying...', true);
+      clearTimeout(p2pReconnectTimer);
+      p2pReconnectTimer = setTimeout(function() {
+        if (peer && !peer.destroyed) {
+          try { peer.reconnect(); } catch (_) {}
+        }
+      }, 5000);
+      return;
+    }
+    setP2PStatus('P2P error: ' + ((err && err.message) || 'unknown'), true);
+  });
 }
 
 // ══════════════════════════════════════
@@ -886,6 +1201,7 @@ function refreshDash() {
   document.getElementById('dash-sub').textContent = acc.isAdmin ? 'Unlimited funds' : 'Air Dollars';
   document.getElementById('admin-badge').style.display = acc.isAdmin ? 'inline-block' : 'none';
   renderTxList(acc.isAdmin ? [] : (acc.transactions || []));
+  refreshP2PUI();
 }
 
 function renderTxList(txs) {
@@ -926,7 +1242,8 @@ function resetSendForm() {
   _pending = null;
 }
 
-function onRecipientInput() {
+async function onRecipientInput() {
+  var seq = ++_discoverSeq;
   var code  = document.getElementById('send-to').value.toUpperCase();
   var errEl = document.getElementById('send-err');
   errEl.textContent = '';
@@ -943,11 +1260,17 @@ function onRecipientInput() {
   if (code === ADMIN_CODE) { errEl.textContent = 'Cannot send to the administrator account.'; return; }
 
   var acc = getAccount(code);
-  if (!acc) { errEl.textContent = 'No account found with that code.'; return; }
+  if (!acc) {
+    errEl.textContent = 'Searching connected peers...';
+    acc = await discoverRemoteAccount(code);
+    if (seq !== _discoverSeq) return;
+    if (!acc) { errEl.textContent = 'No account found with that code.'; return; }
+  }
 
   document.getElementById('rp-name').textContent = acc.name;
-  document.getElementById('rp-code').textContent = acc.code;
+  document.getElementById('rp-code').textContent = acc.remote ? (acc.code + ' · REMOTE') : acc.code;
   document.getElementById('rp-found').className = 'recipient-found show';
+  errEl.textContent = '';
   updateSendSummary();
 }
 
@@ -968,7 +1291,7 @@ function updateSendSummary() {
   btn.disabled = true;
 
   if (toCode.length !== 7) return;
-  var recipientAccount = getAccount(toCode);
+  var recipientAccount = getAccount(toCode) || remoteAccounts[toCode];
   if (!recipientAccount || recipientAccount.isAdmin) return;
   if (!amt || amt <= 0) return;
   if (!me.isAdmin && amt > me.balance) {
@@ -982,7 +1305,7 @@ function updateSendSummary() {
   btn.disabled = false;
 }
 
-function openConfirm() {
+async function openConfirm() {
   var s = getSession(); if (!s) return;
   var me = getAccount(s.code); if (!me) return;
 
@@ -996,12 +1319,19 @@ function openConfirm() {
   if (!amt || amt <= 0)     { errEl.textContent = 'Enter a valid amount.'; return; }
 
   var recipientAccount = getAccount(toCode);
+  if (!recipientAccount) recipientAccount = remoteAccounts[toCode] || await discoverRemoteAccount(toCode);
   if (!recipientAccount)               { errEl.textContent = 'No account found with that code.'; return; }
   if (recipientAccount.isAdmin)        { errEl.textContent = 'Cannot send to the administrator account.'; return; }
   if (!me.isAdmin && amt > me.balance) { errEl.textContent = 'Insufficient balance.'; return; }
 
   // Store for execution
-  _pending = { fromCode: s.code, toCode: toCode, amount: amt };
+  _pending = {
+    fromCode: s.code,
+    toCode: toCode,
+    amount: amt,
+    recipientSource: recipientAccount.remote ? 'remote' : 'local',
+    recipientPeerId: recipientAccount.peerId || null
+  };
 
   // Populate sheet
   document.getElementById('cf-to').textContent      = recipientAccount.name;
@@ -1017,15 +1347,50 @@ function closeConfirm() {
   _pending = null;
 }
 
-function executeTransfer() {
+async function executeTransfer() {
   if (!_pending) { closeConfirm(); return; }
 
   var me    = getAccount(_pending.fromCode);
-  var recipientAccount = getAccount(_pending.toCode);
+  var recipientAccount = getAccount(_pending.toCode) || remoteAccounts[_pending.toCode];
   var amt   = _pending.amount;
 
   if (!me || !recipientAccount) { closeConfirm(); toast('Transfer failed. Account not found.', 'err'); return; }
   if (!me.isAdmin && amt > me.balance) { closeConfirm(); toast('Insufficient balance.', 'err'); return; }
+
+  if (_pending.recipientSource === 'remote') {
+    var peerId = _pending.recipientPeerId || (remoteAccounts[_pending.toCode] && remoteAccounts[_pending.toCode].peerId);
+    if (!peerId || !connections[peerId] || !connections[peerId].open) {
+      closeConfirm(); toast('Recipient peer is not connected.', 'err'); return;
+    }
+    var transferId = txid() + String(Date.now()).slice(-6);
+    var ack = await new Promise(function(resolve) {
+      var timer = setTimeout(function() {
+        delete pendingTransfers[transferId];
+        resolve({ ok: false, error: 'Transfer timed out.' });
+      }, 6000);
+      pendingTransfers[transferId] = { timer: timer, resolve: resolve };
+      sendP2P(peerId, {
+        type: 'transfer_request',
+        transferId: transferId,
+        toCode: _pending.toCode,
+        amount: amt,
+        from: { code: me.code, name: me.isAdmin ? 'Administrator' : me.name, isAdmin: !!me.isAdmin }
+      });
+    });
+    if (!ack || !ack.ok) { closeConfirm(); toast((ack && ack.error) || 'Transfer failed.', 'err'); return; }
+    if (!me.isAdmin) {
+      me.balance -= amt;
+      me.stats = me.stats || {};
+      me.stats.sent = (me.stats.sent || 0) + amt;
+      me.transactions = me.transactions || [];
+      me.transactions.push({ id: txid(), type: 'send', desc: 'Sent to ' + (ack.toName || recipientAccount.name), amount: -amt, ts: Date.now() });
+      saveAccount(me);
+    }
+    closeConfirm();
+    toast(fmt(amt) + ' AD sent to ' + (ack.toName || recipientAccount.name) + '.', 'ok');
+    showScreen('screen-dashboard');
+    return;
+  }
 
   // Debit sender
   if (!me.isAdmin) {
@@ -1125,6 +1490,7 @@ function refreshAccount() {
 //  BOOT
 // ══════════════════════════════════════
 (function boot() {
+  setupPeer();
   var s = getSession();
   if (s && getAccount(s.code)) {
     showScreen('screen-dashboard');
