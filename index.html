@@ -614,26 +614,6 @@ input.input-err { border-color: var(--red) !important; }
 
     <div class="divider" style="margin:8px 0"></div>
 
-    <div>
-      <div style="font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px">Request from an account</div>
-      <div class="page-sub">Pull funds from any account using their code — including the administrator (AAAAAAA).</div>
-    </div>
-
-    <div class="field">
-      <div class="field-label">Source Account Code</div>
-      <input type="text" id="req-from" placeholder="XXXXXXX" maxlength="7"
-        style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:22px;padding:16px"
-        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
-        autocomplete="off">
-    </div>
-    <div class="field">
-      <div class="field-label">Amount (AD)</div>
-      <input type="number" id="req-amount" placeholder="0" min="1">
-    </div>
-    <div class="msg err" id="req-err"></div>
-    <button class="btn btn-primary btn-full" onclick="doRequest()">Request Funds</button>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════
      ACCOUNT
