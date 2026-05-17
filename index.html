@@ -221,6 +221,22 @@ input.input-err { border-color: var(--red) !important; }
 /* ════════════════════ SEND / RECEIVE / ACCOUNT ════════════════════ */
 .page-title { font-size: clamp(22px, 4vw, 28px); font-weight: 800; letter-spacing: -.5px; margin-bottom: 4px; }
 .page-sub   { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); line-height: 1.65; }
+.notice {
+  font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.6;
+  border-radius: var(--r-sm); padding: 11px 13px;
+  border: 1.5px solid var(--border-dark); background: var(--surface2); color: var(--text);
+}
+.notice strong { font-weight: 500; }
+#screen-landing .wrap,
+#screen-onboard .wrap,
+#screen-login .wrap,
+#screen-dashboard .wrap,
+#screen-send .wrap,
+#screen-receive .wrap,
+#screen-account .wrap { padding-bottom: 64px; }
+#screen-send .wrap,
+#screen-receive .wrap,
+#screen-account .wrap { gap: 12px; }
 
 /* recipient found card */
 .recipient-found {
@@ -290,7 +306,7 @@ input.input-err { border-color: var(--red) !important; }
   <div class="sheet">
     <div>
       <div class="sheet-title">Confirm Transfer</div>
-      <div class="sheet-sub">Review the details before sending. This cannot be undone.</div>
+      <div class="sheet-sub">Review and authorize this transfer. A secure peer session must remain active until completion.</div>
     </div>
     <div class="summary-card">
       <div class="summary-row"><span class="summary-key">To</span><span class="summary-val" id="cf-to">--</span></div>
@@ -328,7 +344,7 @@ input.input-err { border-color: var(--red) !important; }
       <button class="btn btn-primary btn-full" onclick="showOnboard()">Open an Account</button>
       <button class="btn btn-ghost btn-full" onclick="showLogin()">Sign In</button>
     </div>
-    <div class="landing-foot">Accounts stored locally on this device.</div>
+    <div class="landing-foot">Accounts are stored locally on this device. Secure peer session required for transfers.</div>
   </div>
 </div>
 
@@ -385,6 +401,10 @@ input.input-err { border-color: var(--red) !important; }
         <div class="check-item" id="ck-3" onclick="toggleCk('ck-3')">
           <svg class="check-box" viewBox="0 0 18 18" fill="none" id="ck-3-svg"><rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/></svg>
           Lost codes cannot be recovered
+        </div>
+        <div class="check-item" id="ck-4" onclick="toggleCk('ck-4')">
+          <svg class="check-box" viewBox="0 0 18 18" fill="none" id="ck-4-svg"><rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/></svg>
+          Transfers require a secure P2P session via Peer ID
         </div>
       </div>
       <button class="btn btn-primary btn-full" id="ob-2-btn" onclick="ob_next(2)" disabled>Continue</button>
@@ -455,7 +475,7 @@ input.input-err { border-color: var(--red) !important; }
           Air Dollars
         </div>
         <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">Welcome back.</div>
-        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:7px;line-height:1.65">Enter your 7-character account code to sign in.</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);margin-top:7px;line-height:1.65">Enter your 7-character account code to sign in. Transfers are enabled after secure Peer ID connection.</div>
       </div>
       <div class="field">
         <div class="field-label">Account Code</div>
@@ -524,6 +544,7 @@ input.input-err { border-color: var(--red) !important; }
     <div class="card" style="padding:16px 18px;margin-bottom:24px">
       <div class="section-label" style="margin-bottom:6px">Device Link (P2P)</div>
       <div class="page-sub" style="margin-bottom:10px">Connect devices by Peer ID to discover remote accounts.</div>
+      <div class="notice" style="margin-bottom:6px"><strong>Secure Connection Required:</strong> Establish a secure peer session before transferring funds.</div>
       <div class="p2p-row" style="justify-content:space-between;flex-wrap:wrap">
         <div class="p2p-id" id="p2p-my-id">---- ----</div>
         <button class="btn btn-ghost btn-sm" onclick="copyMyPeerId()">Copy ID</button>
@@ -533,7 +554,7 @@ input.input-err { border-color: var(--red) !important; }
           oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8).replace(/(.{4})/, '$1-')">
         <button class="btn btn-primary btn-sm" id="p2p-connect-btn" onclick="connectPeerByInput()">Connect</button>
       </div>
-      <div class="msg" id="p2p-status" style="margin-top:8px">P2P idle.</div>
+      <div class="msg" id="p2p-status" style="margin-top:8px">Secure session not established.</div>
     </div>
 
     <!-- tx -->
@@ -555,6 +576,7 @@ input.input-err { border-color: var(--red) !important; }
     </button>
     <div class="page-title">Send Funds</div>
     <div class="page-sub" style="margin-bottom:6px">Enter the recipient's 7-character code and the amount.</div>
+    <div class="notice"><strong>Secure Connection Required:</strong> Establish a secure peer session before transferring funds.</div>
 
     <div class="field">
       <div class="field-label">Recipient Code</div>
@@ -602,6 +624,7 @@ input.input-err { border-color: var(--red) !important; }
     </button>
     <div class="page-title">Receive Funds</div>
     <div class="page-sub" style="margin-bottom:6px">Share your code with the sender — they'll enter it on their Send screen.</div>
+    <div class="notice"><strong>Official Transfer Policy:</strong> Incoming and outgoing transfers are processed only through an active secure P2P session.</div>
 
     <div class="my-code-card">
       <div class="my-code-label">Your Account Code</div>
@@ -613,7 +636,23 @@ input.input-err { border-color: var(--red) !important; }
     </button>
 
     <div class="divider" style="margin:8px 0"></div>
-
+    <div class="page-title" style="font-size:19px;margin-bottom:0">Request From Local Account</div>
+    <div class="page-sub">For same-device testing only. Secure peer sessions are required for inter-device transfers.</div>
+    <div class="field">
+      <div class="field-label">Sender Code</div>
+      <input type="text" id="req-from" placeholder="XXXXXXX" maxlength="7"
+        style="text-transform:uppercase;letter-spacing:6px;text-align:center;font-size:20px;padding:14px"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        autocomplete="off">
+    </div>
+    <div class="field">
+      <div class="field-label">Amount (AD)</div>
+      <input type="number" id="req-amount" placeholder="0" min="1">
+    </div>
+    <div class="msg err" id="req-err"></div>
+    <button class="btn btn-primary btn-full" onclick="doRequest()">Request & Credit</button>
+  </div>
+</div>
 
 <!-- ══════════════════════════════════════
      ACCOUNT
@@ -624,7 +663,8 @@ input.input-err { border-color: var(--red) !important; }
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Dashboard
     </button>
-    <div class="page-title" style="margin-bottom:16px">Account</div>
+    <div class="page-title" style="margin-bottom:0">Account</div>
+    <div class="page-sub" style="margin-bottom:6px">Maintain your code securely. Transfers require secure Peer ID session authorization.</div>
     <div class="card">
       <div class="stat-row"><span class="stat-key">Name</span><span class="stat-val" id="acc-name">--</span></div>
       <div class="stat-row"><span class="stat-key">Account Code</span><span class="stat-val" id="acc-code" style="letter-spacing:3px;cursor:pointer" onclick="copyMyCode()" title="Tap to copy">-------</span></div>
@@ -932,6 +972,11 @@ function discoverRemoteAccount(code) {
     });
   });
 }
+function hasSecurePeerConnection() {
+  return Object.keys(connections).some(function(pid) {
+    return connections[pid] && connections[pid].open;
+  });
+}
 function copyMyPeerId() {
   if (!myPeerId) return;
   if (navigator.clipboard) navigator.clipboard.writeText(formatPeerId(myPeerId));
@@ -1072,7 +1117,7 @@ function resetOnboard() {
   if (ob4btn) ob4btn.disabled = true;
   var ob2btn = document.getElementById('ob-2-btn');
   if (ob2btn) ob2btn.disabled = true;
-  ['ck-1','ck-2','ck-3'].forEach(function(id) {
+  ['ck-1','ck-2','ck-3','ck-4'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('on');
     var svg = document.getElementById(id + '-svg');
@@ -1112,7 +1157,7 @@ function toggleCk(id) {
   document.getElementById(id + '-svg').innerHTML = on
     ? '<rect x="1" y="1" width="16" height="16" rx="5" fill="#e8f5eb" stroke="#4a9a5a" stroke-width="1.5"/><path d="M4.5 9l3 3L13.5 6" stroke="#3a7a48" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
     : '<rect x="1" y="1" width="16" height="16" rx="5" stroke="#c8c4be" stroke-width="1.5"/>';
-  var all = ['ck-1','ck-2','ck-3'].every(function(i) { return document.getElementById(i).classList.contains('on'); });
+  var all = ['ck-1','ck-2','ck-3','ck-4'].every(function(i) { return document.getElementById(i).classList.contains('on'); });
   document.getElementById('ob-2-btn').disabled = !all;
 }
 
@@ -1261,6 +1306,7 @@ function onAmountInput() {
 function updateSendSummary() {
   var s = getSession(); if (!s) return;
   var me = getAccount(s.code); if (!me) return;
+  var errEl = document.getElementById('send-err');
 
   var toCode = document.getElementById('send-to').value.toUpperCase();
   var rawAmt = parseFloat(document.getElementById('send-amount').value);
@@ -1269,13 +1315,18 @@ function updateSendSummary() {
 
   document.getElementById('send-summary').style.display = 'none';
   btn.disabled = true;
+  if (!errEl.textContent || errEl.textContent.indexOf('Secure Connection Required') === 0) errEl.textContent = '';
 
   if (toCode.length !== 7) return;
   var recipientAccount = getAccount(toCode) || remoteAccounts[toCode];
   if (!recipientAccount || recipientAccount.isAdmin) return;
   if (!amt || amt <= 0) return;
+  if (!hasSecurePeerConnection()) {
+    errEl.textContent = 'Secure Connection Required — Establish a secure peer session before transferring funds.';
+    return;
+  }
   if (!me.isAdmin && amt > me.balance) {
-    document.getElementById('send-err').textContent = 'Insufficient balance.'; return;
+    errEl.textContent = 'Insufficient balance.'; return;
   }
 
   document.getElementById('ss-send').textContent    = fmt(amt) + ' AD';
@@ -1297,6 +1348,10 @@ async function openConfirm() {
   if (toCode.length !== 7)  { errEl.textContent = 'Enter a valid recipient code.'; return; }
   if (toCode === s.code)    { errEl.textContent = 'You cannot send to yourself.'; return; }
   if (!amt || amt <= 0)     { errEl.textContent = 'Enter a valid amount.'; return; }
+  if (!hasSecurePeerConnection()) {
+    errEl.textContent = 'Secure Connection Required — Establish a secure peer session before transferring funds.';
+    return;
+  }
 
   var recipientAccount = getAccount(toCode);
   if (!recipientAccount) recipientAccount = remoteAccounts[toCode] || await discoverRemoteAccount(toCode);
@@ -1335,7 +1390,17 @@ async function executeTransfer() {
   var amt   = _pending.amount;
 
   if (!me || !recipientAccount) { closeConfirm(); toast('Transfer failed. Account not found.', 'err'); return; }
+  if (!hasSecurePeerConnection()) { closeConfirm(); toast('Secure Connection Required. Re-establish your peer session.', 'err'); return; }
   if (!me.isAdmin && amt > me.balance) { closeConfirm(); toast('Insufficient balance.', 'err'); return; }
+  var confirmationPeerId = _pending.recipientPeerId || Object.keys(connections).find(function(pid) {
+    return connections[pid] && connections[pid].open;
+  });
+  var confirmed = window.confirm(
+    'Secure Transfer Confirmation:\n\n'
+    + 'Send ' + fmt(amt) + ' AD to ' + recipientAccount.name + ' (' + _pending.toCode + ')?\n'
+    + 'Secure P2P Session: ' + (confirmationPeerId ? formatPeerId(confirmationPeerId) : 'Not available')
+  );
+  if (!confirmed) { closeConfirm(); return; }
 
   if (_pending.recipientSource === 'remote') {
     var peerId = _pending.recipientPeerId || (remoteAccounts[_pending.toCode] && remoteAccounts[_pending.toCode].peerId);
